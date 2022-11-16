@@ -15,22 +15,40 @@ const io = new Server(httpServer, {
 });
 
 
-let rooms = []
+let rooms = {}
+
+// rooms = {
+//      roomId: {
+//          users: [],
+//          messages: [],
+//      }
+// }
+
 io.on("connection", (socket) => {
 
-    socket.on("create room", (name, callback) => {
-        console.log("NAME", name)
-        const roomId = nanoid()
-        const newRoom = {
-            roomId,
-            name
+    socket.on("join room", (roomId, user, callback) => {
+        // add user to room by user object and room name
+        console.log(rooms[roomId])
+        if (rooms[roomId] && rooms[roomId].users.length < 2) {
+            rooms[roomId].users.push(user)
         }
-        rooms.push(newRoom)
-        callback(newRoom)
-    })
 
-    socket.on('get rooms', () => {
-        io.emit(rooms)
+        callback({ rooms, roomId })
+
+        // return all of the messages in that room
+    })
+    socket.on("create room", (user, callback) => {
+        // create unique identifier
+        const roomId = nanoid()
+        // create the room, add current user to it, initialize messages
+        rooms[roomId] = {
+            users: [user],
+            messages: []
+        }
+        // console.log(rooms)
+        // return the room
+        console.log(rooms[roomId])
+        callback({ rooms, roomId })
     })
 
     socket.on("get rooms", (callback) => {
