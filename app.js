@@ -26,10 +26,32 @@ let rooms = {}
 
 io.on("connection", (socket) => {
 
+    // every time there's a disconnect, just check for empty rooms
+    // and delete them
+    socket.on('disconnect', (a) => {
+        console.log(a)
+        Object.keys(rooms).forEach(el => {
+            console.log(el, "KEY?")
+            if (rooms[el].users && rooms[el].users.length === 0) {
+                delete rooms[el]
+            }
+        })
+
+        console.log(rooms, "hitting disconnect callback")
+    })
+
+    socket.on('leave room', (roomId, user) => {
+        if (rooms[roomId] && rooms[roomId].users) {
+            rooms[roomId].users = rooms[roomId].users.filter(participant => participant.userId !== user.userId)
+        }
+
+        console.log(rooms[roomId]?.users)
+    })
+
     socket.on("join room", (roomId, user, callback) => {
         // add user to room by user object and room name
         console.log(rooms[roomId])
-        if (rooms[roomId] && rooms[roomId].users.length < 2) {
+        if (rooms[roomId] && rooms[roomId].users.length < 3) {
             rooms[roomId].users.push(user)
         }
 
@@ -47,18 +69,15 @@ io.on("connection", (socket) => {
         }
         // console.log(rooms)
         // return the room
-        console.log(rooms[roomId])
+        console.log(rooms)
         callback({ rooms, roomId })
     })
 
-    socket.on("get rooms", (callback) => {
-        callback(rooms);
-    });
+    socket.on("send chat", (roomId, user, chat, callback) => {
 
-    socket.on('messageAll', (data) => {
-        console.log(data)
-        socket.emit(data)
     })
+
+
 });
 
 httpServer.listen(3000);
