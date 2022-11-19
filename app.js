@@ -24,55 +24,33 @@ let rooms = {}
 //      }
 // }
 
+
+// todos for this
+// create room with .join
+// broadcast only to rooms
+// separate event listener for chess game status
+
 io.on("connection", (socket) => {
 
-    // every time there's a disconnect, just check for empty rooms
-    // and delete them
-    socket.on('disconnect', (a) => {
-        console.log("disconnecting")
+    socket.on("sendChat", (message, roomId) => {
+        socket.broadcast.to(roomId).emit('chat', message)
     })
 
-    socket.on('leave room', (roomId, user) => {
-        if (rooms[roomId] && rooms[roomId].users) {
-            rooms[roomId].users = rooms[roomId].users.filter(participant => participant.userId !== user.userId)
+    socket.on("joinRoom", ({ roomId, user }) => {
+        console.log(`${user.username} joined ${roomId}`)
+        socket.join(roomId)
+        const data = {
+            message: `${user.username} has joined the room`,
+            username: 'ChatBot'
         }
 
-        console.log(rooms[roomId]?.users)
+        socket.to(roomId).emit('chat', data)
+
     })
 
-    socket.on("send chat", (message, roomId) => {
-        if (!rooms[roomId]) {
-            callback({ error: 404, message: "Room does not exist" })
-        } else {
-            rooms[roomId].messages.push(message)
-            // console.log(rooms[roomId].messages)
-            // callback({ ok: 200, message })
-            io.emit('chat', message)
-        }
-    })
-
-    socket.on("join room", (roomId, user, callback) => {
-        // add user to room by user object and room name
-
-        // if room doesn't exist
-        if (!rooms[roomId]) {
-            callback({ error: 404, message: `${roomId} not found.` })
-        }
-
-        // if room exists and has 2 or more users already
-        else if (rooms[roomId].users.length >= 2) {
-            callback({ error: 400, message: `${roomId} is currently full` })
-        }
-
-        // check if user is already in the room to prevent bugs
-        const users = rooms[roomId].users.map(user => user.id)
-        if (users.includes(user.id)) {
-            callback({ error: 400, message: `${user.username} is already part of room ${roomId}` })
-        } else {
-            rooms[roomId].users.push(user)
-            callback({ ok: 200, message: `${user.username} successfully joined room ${roomId}`, roomId })
-        }
-
+    socket.on("sendChat", ({ message, roomId }) => {
+        console.log(message, roomId, "MESSAGE AND ROOM ID IN SEND CHAT")
+        io.in(roomId).emit('chat', message)
     })
 
     socket.on("create room", (roomId, user, callback) => {
