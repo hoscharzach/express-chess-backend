@@ -29,15 +29,16 @@ io.on("connection", (socket) => {
     // every time there's a disconnect, just check for empty rooms
     // and delete them
     socket.on('disconnect', (a) => {
-        console.log(a)
-        Object.keys(rooms).forEach(el => {
-            console.log(el, "KEY?")
-            if (rooms[el].users && rooms[el].users.length === 0) {
-                delete rooms[el]
-            }
-        })
+        // console.log(a)
+        console.log("disconnecting")
+        // Object.keys(rooms).forEach(el => {
+        //     console.log(el, "KEY?")
+        //     if (rooms[el].users && rooms[el].users.length === 0) {
+        //         delete rooms[el]
+        //     }
+        // })
 
-        console.log(rooms, "hitting disconnect callback")
+        // console.log(rooms, "hitting disconnect callback")
     })
 
     socket.on('leave room', (roomId, user) => {
@@ -49,28 +50,33 @@ io.on("connection", (socket) => {
     })
 
     socket.on("join room", (roomId, user, callback) => {
+        console.log(user)
         // add user to room by user object and room name
-        console.log(rooms[roomId])
-        if (rooms[roomId] && rooms[roomId].users.length < 3) {
+        if (rooms[roomId]) {
             rooms[roomId].users.push(user)
+            callback({ ok: 200, message: `${user.username} successfully joined room ${roomId}` })
+        } else {
+            callback({ error: 404, message: `${roomId} not found.` })
         }
+        // if (rooms[roomId] && rooms[roomId].users.length < 3) {
+        //     rooms[roomId].users.push(user)
+        // }
 
-        callback({ rooms, roomId })
+        callback({ roomId })
 
         // return all of the messages in that room
     })
-    socket.on("create room", (user, callback) => {
+    socket.on("create room", (roomId, user, callback) => {
         // create unique identifier
-        const roomId = nanoid()
         // create the room, add current user to it, initialize messages
         rooms[roomId] = {
             users: [user],
             messages: []
         }
-        // console.log(rooms)
+
         // return the room
         console.log(rooms)
-        callback({ rooms, roomId })
+        callback({ message: `Room created with id ${roomId}` })
     })
 
     socket.on("send chat", (roomId, user, chat, callback) => {
