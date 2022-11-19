@@ -4,16 +4,19 @@ import { nanoid } from "nanoid";
 import { Server } from "socket.io";
 
 const app = express();
-
+app.use(express.json())
 
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: "http://localhost:5173"
+        origin: "*"
     }
 });
 
+app.get('/', (req, res) => {
+    return res.json({ message: "Working fine" })
+})
 
 let rooms = {}
 
