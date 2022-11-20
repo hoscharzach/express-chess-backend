@@ -7,6 +7,8 @@ const app = express();
 app.use(express.json())
 
 
+
+// allow all CORs for testing
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
@@ -14,34 +16,26 @@ const io = new Server(httpServer, {
     }
 });
 
+// health check
 app.get('/', (req, res) => {
     return res.json({ message: "Working fine" })
 })
 
-let rooms = {}
-
-// rooms = {
-//      roomId: {
-//          users: [],
-//          messages: [],
-//      }
-// }
-
-
-// todos for this
-// create room with .join
-// broadcast only to rooms
-// separate event listener for chess game status
-
+// on new web socket connection
 io.on("connection", (socket) => {
 
     socket.on("sendChat", (message, roomId) => {
         socket.broadcast.to(roomId).emit('chat', message)
+        // console.log(io.sockets.adapter.rooms.get(roomId), "NUMBER OF USERS IN ROOM")
     })
 
+
     socket.on("joinRoom", ({ roomId, user }) => {
-        console.log(`${user.username} joined ${roomId}`)
+
+        // have the socket join the room
         socket.join(roomId)
+
+        // generate message to announce user is joining the room
         const data = {
             message: `${user.username} has joined the room`,
             username: 'ChatBot'
@@ -49,25 +43,28 @@ io.on("connection", (socket) => {
 
         socket.to(roomId).emit('chat', data)
 
+        // if user is first player to join, give them white
+        if (socket.adapter.rooms.get(roomId).size == 1) {
+            const updateData = { user, color: 'white' }
+            io.in(roomId).emit('chessOrder', updateData)
+
+            // if user is second player to join, give them black
+        } else if (socket.adapter.rooms.get(roomId).size == 2) {
+            const updateData = { user, color: 'black' }
+            io.in(roomId).emit('chessOrder', updateData)
+        } else {
+            io.emit('chat', { username: 'Chatbot', message: `Sorry ${user.username}, the game already has 2 players` })
+        }
+
     })
 
+
+    // send chat broadcasts to everyone in the room with io, not socket,
+    // so even the user that sent it can see their own messages
     socket.on("sendChat", ({ message, roomId }) => {
-        console.log(message, roomId, "MESSAGE AND ROOM ID IN SEND CHAT")
         io.in(roomId).emit('chat', message)
     })
 
-    socket.on("create room", (roomId, user, callback) => {
-        // create unique identifier
-        // create the room, add current user to it, initialize messages
-        rooms[roomId] = {
-            users: [user],
-            messages: []
-        }
-
-        // return the room
-        console.log(rooms)
-        callback({ ok: 200, message: `Room created with id ${roomId}`, roomId })
-    })
 
 
 
