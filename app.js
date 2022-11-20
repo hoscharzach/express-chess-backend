@@ -45,17 +45,36 @@ io.on("connection", (socket) => {
 
         // if user is first player to join, give them white
         if (socket.adapter.rooms.get(roomId).size == 1) {
-            const updateData = { user, color: 'white' }
+            const updateData = { user, color: 'w' }
             io.in(roomId).emit('chessOrder', updateData)
 
             // if user is second player to join, give them black
         } else if (socket.adapter.rooms.get(roomId).size == 2) {
-            const updateData = { user, color: 'black' }
+            const updateData = { user, color: 'b' }
             io.in(roomId).emit('chessOrder', updateData)
         } else {
             io.emit('chat', { username: 'Chatbot', message: `Sorry ${user.username}, the game already has 2 players` })
         }
 
+    })
+
+    // broadcast the move to everyone in the room on each chess update
+    socket.on("chessUpdate", data => {
+
+        // swap turns
+        data.turn === 'w' ? data.turn = 'b' : data.turn = 'w'
+
+        // if the pawns are on their first move, remove the y
+        if (data.piece === 'wpy') {
+            data.piece = 'wp'
+        }
+
+        if (data.piece === 'bpy') {
+            data.piece = 'bp'
+        }
+
+        // broadcast the state
+        io.in(data.currentRoom).emit("chessUpdate", data)
     })
 
 
