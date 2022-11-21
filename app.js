@@ -45,15 +45,16 @@ io.on("connection", (socket) => {
 
         // if user is first player to join, give them white
         if (socket.adapter.rooms.get(roomId).size == 1) {
-            const updateData = { user, color: 'w' }
+            const updateData = { user, color: 'w', gameStart: false }
             io.in(roomId).emit('chessOrder', updateData)
 
             // if user is second player to join, give them black
         } else if (socket.adapter.rooms.get(roomId).size == 2) {
-            const updateData = { user, color: 'b' }
+            const updateData = { user, color: 'b', gameStart: true }
             io.in(roomId).emit('chessOrder', updateData)
+
         } else {
-            io.emit('chat', { username: 'Chatbot', message: `Sorry ${user.username}, the game already has 2 players` })
+            io.in(roomId).emit('chat', { username: 'Chatbot', message: `Sorry ${user.username}, the game already has 2 players` })
         }
 
     })
